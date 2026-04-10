@@ -4,8 +4,9 @@ Runs multi-step simulations using LLM, NN, and rule-based updates — Bangladesh
 """
 import numpy as np
 import time
-from typing import List, Dict, Any, Optional, Set
-from data_models import Citizen, CitizenState, SimulationConfig
+from collections import defaultdict
+from typing import List, Dict, Any, Optional, Set, Tuple
+from data_models import Citizen, CitizenState, SimulationConfig, DIVISIONS, INCOME_LEVELS
 from ml_data import MLDataset
 from utils import build_feature_vector, compute_deltas, apply_deltas, citizen_to_dict, state_to_dict
 from stats import compute_time_series_stats
@@ -192,6 +193,100 @@ def rule_based_update(
     return new_happiness, new_policy_support, new_income
 
 
+def _select_stratified_anchors(
+    citizens: List[Citizen],
+    rng: np.random.Generator,
+    per_cell: int = 3,
+) -> Set[int]:
+    """
+    Select a stratified sample of citizens covering all (income_level × division) cells.
+
+    Returns a set of citizen IDs chosen so that every stratum is represented.
+    For a population of 5000 with 3 income levels × 8 divisions = 24 cells,
+    this selects ~72 citizens (3 per cell) instead of 300 random ones — fewer
+    LLM calls but guaranteed full coverage.
+    """
+    # Bucket citizens by (income_level, division)
+    buckets: Dict[Tuple[str, str], List[int]] = defaultdict(list)
+    for c in citizens:
+        buckets[(c.income_level, c.division)].append(c.id)
+
+    anchor_ids: Set[int] = set()
+    for key, cid_list in buckets.items():
+        n_pick = min(per_cell, len(cid_list))
+        chosen = rng.choice(cid_list, size=n_pick, replace=False)
+        anchor_ids.update(chosen.tolist())
+
+    logger.info(
+        f"Stratified anchors: {len(anchor_ids)} citizens across "
+        f"{len(buckets)} strata ({per_cell} per cell)"
+    )
+    return anchor_ids
+
+
+def _compute_calibration_bounds(
+    anchor_states: List[CitizenState],
+    citizens: List[Citizen],
+) -> Dict[Tuple[str, str], Dict[str, Any]]:
+    """
+    Compute per-stratum (income_level × division) statistics from anchor LLM results.
+
+    Returns a dict mapping (income_level, division) → {mean_h, mean_s, mean_i, std_h, std_s, std_i}.
+    """
+    citizen_map = {c.id: c for c in citizens}
+    buckets: Dict[Tuple[str, str], Dict[str, list]] = defaultdict(
+        lambda: {"h": [], "s": [], "i": []}
+    )
+
+    for st in anchor_states:
+        c = citizen_map[st.citizen_id]
+        key = (c.income_level, c.division)
+        buckets[key]["h"].append(st.happiness)
+        buckets[key]["s"].append(st.policy_support)
+        buckets[key]["i"].append(st.income)
+
+    bounds = {}
+    for key, vals in buckets.items():
+        bounds[key] = {
+            "mean_h": float(np.mean(vals["h"])),
+            "mean_s": float(np.mean(vals["s"])),
+            "mean_i": float(np.mean(vals["i"])),
+            "std_h": max(float(np.std(vals["h"])), 0.02),
+            "std_s": max(float(np.std(vals["s"])), 0.02),
+            "std_i": max(float(np.std(vals["i"])), 500.0),
+        }
+    return bounds
+
+
+def _calibrate_prediction(
+    new_h: float,
+    new_s: float,
+    new_i: float,
+    citizen: Citizen,
+    bounds: Dict[Tuple[str, str], Dict[str, Any]],
+) -> Tuple[float, float, float]:
+    """
+    Shift/clamp NN-predicted values toward the anchor-derived stratum bounds.
+
+    Uses a 2-sigma window: if the prediction is within [mean-2σ, mean+2σ] of the
+    anchor group, keep it. Otherwise clamp to the boundary.
+    """
+    key = (citizen.income_level, citizen.division)
+    if key not in bounds:
+        return new_h, new_s, new_i
+
+    b = bounds[key]
+    new_h = float(np.clip(new_h, b["mean_h"] - 2 * b["std_h"], b["mean_h"] + 2 * b["std_h"]))
+    new_s = float(np.clip(new_s, b["mean_s"] - 2 * b["std_s"], b["mean_s"] + 2 * b["std_s"]))
+    new_i = float(np.clip(new_i, b["mean_i"] - 2 * b["std_i"], b["mean_i"] + 2 * b["std_i"]))
+
+    # Enforce hard bounds
+    new_h = float(np.clip(new_h, 0.0, 1.0))
+    new_s = float(np.clip(new_s, -1.0, 1.0))
+    new_i = max(0.0, new_i)
+    return new_h, new_s, new_i
+
+
 def run_simulation(
     config: SimulationConfig,
     citizens: List[Citizen],
@@ -271,44 +366,25 @@ def run_simulation(
         step_rule_count = 0
 
         # Determine LLM sample for this step
-        # In LLM_ONLY mode, send ALL citizens to LLM for maximum training data quality.
-        # In HYBRID mode, cap at 300 to balance LLM cost with NN coverage.
         if config.mode == "LLM_ONLY":
             llm_sample_size = len(citizens)
+            llm_sample_indices = rng.choice(len(citizens), size=llm_sample_size, replace=False)
+            llm_sample_ids: Set[int] = {citizens[i].id for i in llm_sample_indices}
+        elif config.mode == "HYBRID":
+            # Stratified anchor selection — guaranteed coverage of all strata
+            llm_sample_ids = _select_stratified_anchors(citizens, rng, per_cell=3)
         else:
-            llm_sample_size = min(300, len(citizens))
-        llm_sample_indices = rng.choice(len(citizens), size=llm_sample_size, replace=False)
-        llm_sample_ids: Set[int] = {citizens[i].id for i in llm_sample_indices}
+            llm_sample_ids = set()
 
-        # Process each citizen
-        for citizen_idx, citizen in enumerate(citizens):
-            # Progress every 10 citizens
-            if citizen_idx % 10 == 0:
-                logger.info(f"  Step {step}: citizen {citizen_idx+1}/{len(citizens)} ...")
+        # ── Phase 1 (HYBRID): Process anchor citizens via LLM first ────────
+        anchor_states_this_step: List[CitizenState] = []
+        calibration_bounds: Dict = {}
 
-            prev_state = get_prev_state(citizen.id, step)
-
-            # Build feature vector
-            X = build_feature_vector(citizen, prev_state, config.policy.domain)
-
-            # Determine update method based on mode
-            use_llm = False
-            use_nn = False
-
-            if config.mode == "LLM_ONLY":
-                use_llm = citizen.id in llm_sample_ids
-            elif config.mode == "HYBRID":
-                if citizen.id in llm_sample_ids:
-                    use_llm = True
-                elif existing_model and existing_model.is_trained:
-                    use_nn = True
-            elif config.mode == "NN_ONLY":
-                if existing_model and existing_model.is_trained:
-                    use_nn = True
-
-            # Apply update
-            if use_llm:
-                # LLM-based update
+        if config.mode == "HYBRID":
+            anchor_citizens = [c for c in citizens if c.id in llm_sample_ids]
+            for citizen in anchor_citizens:
+                prev_state = get_prev_state(citizen.id, step)
+                X = build_feature_vector(citizen, prev_state, config.policy.domain)
                 try:
                     citizen_profile = citizen_to_dict(citizen)
                     current_state = state_to_dict(prev_state)
@@ -317,106 +393,126 @@ def run_simulation(
                         "description": config.policy.description,
                         "domain": config.policy.domain
                     }
-
                     reaction = llm_client.generate_citizen_reaction(
                         citizen_profile, current_state, policy_dict
                     )
-
                     new_happiness = reaction["new_happiness"]
                     new_policy_support = reaction["new_policy_support"]
                     income_delta = reaction["income_delta"]
                     new_income = max(0.0, prev_state.income + income_delta)
                     diary_entry = reaction.get("diary_entry")
 
-                    # Store training sample
                     Y = compute_deltas(prev_state, new_happiness, new_policy_support, new_income)
                     training_dataset.add_sample(X, Y)
 
-                    # Create new state
                     new_state = CitizenState(
-                        citizen_id=citizen.id,
-                        step=step,
-                        happiness=new_happiness,
-                        policy_support=new_policy_support,
-                        income=new_income,
-                        diary_entry=diary_entry,
-                        llm_updated=True
+                        citizen_id=citizen.id, step=step,
+                        happiness=new_happiness, policy_support=new_policy_support,
+                        income=new_income, diary_entry=diary_entry, llm_updated=True,
+                    )
+                    all_states.append(new_state)
+                    anchor_states_this_step.append(new_state)
+                    step_llm_count += 1
+                except Exception as e:
+                    logger.error(f"LLM error for anchor citizen {citizen.id}: {e}")
+                    # Fall back to rule-based for this anchor
+                    new_happiness, new_policy_support, new_income = rule_based_update(
+                        citizen, prev_state, config.policy.domain, rng
+                    )
+                    new_state = CitizenState(
+                        citizen_id=citizen.id, step=step,
+                        happiness=new_happiness, policy_support=new_policy_support,
+                        income=new_income, diary_entry=None, llm_updated=False,
+                    )
+                    all_states.append(new_state)
+                    anchor_states_this_step.append(new_state)
+                    step_rule_count += 1
+
+            # ── Phase 2: Compute calibration bounds from anchors ────────────
+            if anchor_states_this_step:
+                calibration_bounds = _compute_calibration_bounds(
+                    anchor_states_this_step, citizens
+                )
+                logger.info(
+                    f"Step {step}: calibration bounds from "
+                    f"{len(anchor_states_this_step)} anchors across "
+                    f"{len(calibration_bounds)} strata"
+                )
+
+        # ── Phase 3: Process remaining citizens ────────────────────────────
+        for citizen_idx, citizen in enumerate(citizens):
+            if citizen_idx % 10 == 0:
+                logger.info(f"  Step {step}: citizen {citizen_idx+1}/{len(citizens)} ...")
+
+            # Skip anchors already processed in HYBRID Phase 1
+            if config.mode == "HYBRID" and citizen.id in llm_sample_ids:
+                continue
+
+            prev_state = get_prev_state(citizen.id, step)
+            X = build_feature_vector(citizen, prev_state, config.policy.domain)
+
+            # Determine update method
+            use_llm = False
+            use_nn = False
+
+            if config.mode == "LLM_ONLY":
+                use_llm = citizen.id in llm_sample_ids
+            elif config.mode == "HYBRID":
+                # Non-anchor citizens: use NN if available, else rule-based
+                if existing_model and hasattr(existing_model, 'predict'):
+                    use_nn = True
+            elif config.mode == "NN_ONLY":
+                if existing_model and hasattr(existing_model, 'predict'):
+                    use_nn = True
+
+            if use_llm:
+                try:
+                    citizen_profile = citizen_to_dict(citizen)
+                    current_state = state_to_dict(prev_state)
+                    policy_dict = {
+                        "title": config.policy.title,
+                        "description": config.policy.description,
+                        "domain": config.policy.domain
+                    }
+                    reaction = llm_client.generate_citizen_reaction(
+                        citizen_profile, current_state, policy_dict
+                    )
+                    new_happiness = reaction["new_happiness"]
+                    new_policy_support = reaction["new_policy_support"]
+                    income_delta = reaction["income_delta"]
+                    new_income = max(0.0, prev_state.income + income_delta)
+                    diary_entry = reaction.get("diary_entry")
+
+                    Y = compute_deltas(prev_state, new_happiness, new_policy_support, new_income)
+                    training_dataset.add_sample(X, Y)
+
+                    new_state = CitizenState(
+                        citizen_id=citizen.id, step=step,
+                        happiness=new_happiness, policy_support=new_policy_support,
+                        income=new_income, diary_entry=diary_entry, llm_updated=True,
                     )
                     step_llm_count += 1
-
                 except Exception as e:
                     logger.error(f"LLM error for citizen {citizen.id}: {e}")
-
-                    # In HYBRID mode, try to fall back to NN if available
-                    if config.mode == "HYBRID" and existing_model and existing_model.is_trained:
-                        logger.info(f"Falling back to NN for citizen {citizen.id}")
-                        try:
-                            # Apply scaler if available
-                            if feature_scaler:
-                                X_scaled = feature_scaler.transform(X.reshape(1, -1))
-                            else:
-                                X_scaled = X.reshape(1, -1)
-
-                            deltas = existing_model.predict(X_scaled)[0]
-                            if target_scaler is not None:
-                                deltas = target_scaler.inverse_transform(deltas.reshape(1, -1))[0]
-                            new_happiness, new_policy_support, new_income = apply_deltas(prev_state, deltas)
-
-                            new_state = CitizenState(
-                                citizen_id=citizen.id,
-                                step=step,
-                                happiness=new_happiness,
-                                policy_support=new_policy_support,
-                                income=new_income,
-                                diary_entry=None,
-                                llm_updated=False
-                            )
-                            step_nn_count += 1
-                        except Exception as nn_e:
-                            logger.error(f"NN fallback also failed for citizen {citizen.id}: {nn_e}, using rule-based")
-                            new_happiness, new_policy_support, new_income = rule_based_update(
-                                citizen, prev_state, config.policy.domain, rng
-                            )
-                            new_state = CitizenState(
-                                citizen_id=citizen.id,
-                                step=step,
-                                happiness=new_happiness,
-                                policy_support=new_policy_support,
-                                income=new_income,
-                                diary_entry=None,
-                                llm_updated=False
-                            )
-                            step_rule_count += 1
-                    else:
-                        # No NN available, fall back to rule-based
-                        logger.info(f"No NN available, using rule-based for citizen {citizen.id}")
-                        new_happiness, new_policy_support, new_income = rule_based_update(
-                            citizen, prev_state, config.policy.domain, rng
-                        )
-                        new_state = CitizenState(
-                            citizen_id=citizen.id,
-                            step=step,
-                            happiness=new_happiness,
-                            policy_support=new_policy_support,
-                            income=new_income,
-                            diary_entry=None,
-                            llm_updated=False
-                        )
-                        step_rule_count += 1
+                    new_happiness, new_policy_support, new_income = rule_based_update(
+                        citizen, prev_state, config.policy.domain, rng
+                    )
+                    new_state = CitizenState(
+                        citizen_id=citizen.id, step=step,
+                        happiness=new_happiness, policy_support=new_policy_support,
+                        income=new_income, diary_entry=None, llm_updated=False,
+                    )
+                    step_rule_count += 1
 
             elif use_nn:
-                # NN-based update
                 try:
-                    # Time the prediction
                     nn_start = time.time()
 
-                    # Apply scaler if available
                     if feature_scaler:
                         X_scaled = feature_scaler.transform(X.reshape(1, -1))
                     else:
                         X_scaled = X.reshape(1, -1)
 
-                    # Explicit null check before prediction
                     if existing_model is None:
                         raise ValueError("Neural network model is None - cannot predict")
 
@@ -425,49 +521,41 @@ def run_simulation(
                         deltas = target_scaler.inverse_transform(deltas.reshape(1, -1))[0]
                     new_happiness, new_policy_support, new_income = apply_deltas(prev_state, deltas)
 
+                    # Apply calibration bounds from anchor statistics (HYBRID mode)
+                    if calibration_bounds:
+                        new_happiness, new_policy_support, new_income = _calibrate_prediction(
+                            new_happiness, new_policy_support, new_income,
+                            citizen, calibration_bounds,
+                        )
+
                     nn_time = time.time() - nn_start
                     nn_stats["nn_prediction_times"].append(nn_time)
 
                     new_state = CitizenState(
-                        citizen_id=citizen.id,
-                        step=step,
-                        happiness=new_happiness,
-                        policy_support=new_policy_support,
-                        income=new_income,
-                        diary_entry=None,
-                        llm_updated=False
+                        citizen_id=citizen.id, step=step,
+                        happiness=new_happiness, policy_support=new_policy_support,
+                        income=new_income, diary_entry=None, llm_updated=False,
                     )
                     step_nn_count += 1
-
                 except Exception as e:
                     logger.error(f"NN error for citizen {citizen.id}: {e}, falling back to rule-based")
                     new_happiness, new_policy_support, new_income = rule_based_update(
                         citizen, prev_state, config.policy.domain, rng
                     )
                     new_state = CitizenState(
-                        citizen_id=citizen.id,
-                        step=step,
-                        happiness=new_happiness,
-                        policy_support=new_policy_support,
-                        income=new_income,
-                        diary_entry=None,
-                        llm_updated=False
+                        citizen_id=citizen.id, step=step,
+                        happiness=new_happiness, policy_support=new_policy_support,
+                        income=new_income, diary_entry=None, llm_updated=False,
                     )
                     step_rule_count += 1
-
             else:
-                # Rule-based update
                 new_happiness, new_policy_support, new_income = rule_based_update(
                     citizen, prev_state, config.policy.domain, rng
                 )
                 new_state = CitizenState(
-                    citizen_id=citizen.id,
-                    step=step,
-                    happiness=new_happiness,
-                    policy_support=new_policy_support,
-                    income=new_income,
-                    diary_entry=None,
-                    llm_updated=False
+                    citizen_id=citizen.id, step=step,
+                    happiness=new_happiness, policy_support=new_policy_support,
+                    income=new_income, diary_entry=None, llm_updated=False,
                 )
                 step_rule_count += 1
 
