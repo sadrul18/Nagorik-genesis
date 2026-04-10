@@ -1,5 +1,5 @@
 """
-Test suite for নাগরিক-GENESIS (NAGORIK-GENESIS).
+Test suite for NAGORIK-GENESIS.
 Tests population generation, feature vectors, rule-based engine,
 stats computation, data models, and end-to-end simulation (rule-based only).
 
@@ -215,11 +215,11 @@ def test_population_income_ranges_bdt():
     pop = generate_population(1000, seed=42)
     for c in pop:
         if c.income_level == "low":
-            assert 8000 <= c.base_income <= 15000, f"Low income {c.base_income} outside ৳8K-15K"
+            assert 8000 <= c.base_income <= 15000, f"Low income {c.base_income} outside BDT 8K-15K"
         elif c.income_level == "middle":
-            assert 20000 <= c.base_income <= 60000, f"Middle income {c.base_income} outside ৳20K-60K"
+            assert 20000 <= c.base_income <= 60000, f"Middle income {c.base_income} outside BDT 20K-60K"
         elif c.income_level == "high":
-            assert 80000 <= c.base_income <= 500000, f"High income {c.base_income} outside ৳80K-500K"
+            assert 80000 <= c.base_income <= 500000, f"High income {c.base_income} outside BDT 80K-500K"
 
 
 def test_population_education_income_correlation():
@@ -272,10 +272,10 @@ def test_population_reproducibility():
 # 3. UTILS / FEATURE VECTOR TESTS
 # ===================================================================
 def test_format_income_bdt():
-    """Verify ৳ symbol and comma formatting."""
-    assert format_income(12000) == "৳12,000"
-    assert format_income(150000) == "৳1,50,000" or format_income(150000) == "৳150,000"
-    assert format_income(0) == "৳0"
+    """Verify BDT prefix and comma formatting."""
+    assert format_income(12000) == "BDT 12,000"
+    assert format_income(150000) == "BDT 1,50,000" or format_income(150000) == "BDT 150,000"
+    assert format_income(0) == "BDT 0"
 
 
 def test_format_support():
@@ -402,12 +402,14 @@ def test_policy_presets_domains():
         assert p["domain"] in DOMAINS, f"Preset domain '{p['domain']}' not in DOMAINS"
 
 
-def test_policy_presets_bengali():
-    """Verify presets contain Bengali text."""
+def test_policy_presets_content():
+    """Verify presets contain English policy descriptions."""
     presets = get_policy_presets()
     for p in presets:
-        assert "৳" in p["description"] or any(ord(c) > 2432 for c in p["title"]), \
-            f"Preset '{p['title']}' lacks Bengali content"
+        assert len(p["description"]) > 20, \
+            f"Preset '{p['title']}' has insufficient description"
+        assert len(p["title"]) > 5, \
+            f"Preset '{p['title']}' has insufficient title"
 
 
 def test_citizen_to_dict():
@@ -784,7 +786,7 @@ def main():
     global PASSED, FAILED, ERRORS
 
     print("=" * 70)
-    print("  নাগরিক-GENESIS Test Suite")
+    print("  NAGORIK-GENESIS Test Suite")
     print("=" * 70)
 
     # 1. Data Models

@@ -1,5 +1,5 @@
 """
-Utility functions for নাগরিক-GENESIS (NAGORIK-GENESIS).
+Utility functions for NAGORIK-GENESIS.
 Helper functions for data conversion, formatting, and feature engineering — Bangladesh localized.
 """
 import numpy as np
@@ -74,7 +74,7 @@ def format_support(support: float) -> str:
 
 def format_income(income: float) -> str:
     """Format income value with Bangladeshi Taka symbol."""
-    return f"৳{income:,.0f}"
+    return f"BDT {income:,.0f}"
 
 
 def encode_categorical_one_hot(value: str, categories: List[str]) -> List[float]:
@@ -216,72 +216,61 @@ def get_policy_presets() -> List[Dict[str, str]]:
     """
     return [
         {
-            "title": "জ্বালানি ভর্তুকি প্রত্যাহার (Fuel Subsidy Removal)",
+            "title": "Fuel Subsidy Removal",
             "description": (
-                "সরকার ডিজেল ও কেরোসিনের ভর্তুকি প্রত্যাহার করছে। জ্বালানির দাম ৩০% বৃদ্ধি পাবে, "
-                "যা পরিবহন ও খাদ্যমূল্যে প্রভাব ফেলবে। "
                 "Government removes diesel and kerosene subsidies. Fuel prices rise 30%, "
                 "impacting transport and food costs across Bangladesh."
             ),
             "domain": "Economy"
         },
         {
-            "title": "গার্মেন্ট শ্রমিকদের ন্যূনতম মজুরি বৃদ্ধি (RMG Minimum Wage Hike)",
+            "title": "RMG Minimum Wage Hike",
             "description": (
-                "গার্মেন্ট শ্রমিকদের ন্যূনতম মাসিক মজুরি ৳12,500 থেকে ৳18,000-এ উন্নীত করা হচ্ছে। "
-                "Minimum monthly wage for RMG workers raised from ৳12,500 to ৳18,000."
+                "Minimum monthly wage for RMG workers raised from BDT 12,500 to BDT 18,000."
             ),
             "domain": "Economy"
         },
         {
-            "title": "ডিজিটাল বাংলাদেশ বৃত্তি (Digital Bangladesh Scholarship)",
+            "title": "Digital Bangladesh Scholarship",
             "description": (
-                "গ্রামীণ এলাকার মেধাবী শিক্ষার্থীদের জন্য বার্ষিক ৳50,000 বৃত্তি এবং ল্যাপটপ প্রদান। "
-                "Annual ৳50,000 scholarship + laptop for meritorious rural students to pursue STEM education."
+                "Annual BDT 50,000 scholarship + laptop for meritorious rural students to pursue STEM education."
             ),
             "domain": "Education"
         },
         {
-            "title": "বন্যা-পরবর্তী সহায়তা প্যাকেজ (Post-Flood Relief Package)",
+            "title": "Post-Flood Relief Package",
             "description": (
-                "বন্যা-আক্রান্ত পরিবারগুলোকে ৳25,000 নগদ সহায়তা, বিনামূল্যে খাদ্য ও অস্থায়ী আশ্রয় প্রদান। "
-                "৳25,000 cash aid, free food rations, and temporary shelters for flood-affected families "
+                "BDT 25,000 cash aid, free food rations, and temporary shelters for flood-affected families "
                 "in northern Bangladesh."
             ),
             "domain": "Climate & Disaster"
         },
         {
-            "title": "মেট্রোরেল সম্প্রসারণ (Metro Rail Expansion)",
+            "title": "Metro Rail Expansion",
             "description": (
-                "ঢাকা মেট্রোরেল সম্প্রসারণ: উত্তরা থেকে কমলাপুর পর্যন্ত। "
-                "দৈনিক ৫ লক্ষ যাত্রী ধারণক্ষমতা, যা যানজট কমাবে। "
                 "Dhaka Metro Rail expansion from Uttara to Kamalapur. "
                 "Capacity for 500K daily riders, reducing traffic congestion."
             ),
             "domain": "Infrastructure"
         },
         {
-            "title": "বস্তি উচ্ছেদ ও পুনর্বাসন (Slum Eviction & Resettlement)",
+            "title": "Slum Eviction & Resettlement",
             "description": (
-                "ঢাকার করাইল বস্তি উচ্ছেদ করে বাসিন্দাদের শহরের বাইরে পুনর্বাসনের পরিকল্পনা। "
                 "Plan to evict Korail slum in Dhaka and resettle residents to the outskirts with basic housing."
             ),
             "domain": "Social"
         },
         {
-            "title": "সকলের জন্য স্বাস্থ্যসেবা কার্ড (Universal Health Card)",
+            "title": "Universal Health Card",
             "description": (
-                "প্রতিটি পরিবারকে একটি স্বাস্থ্যসেবা কার্ড দেওয়া হবে যাতে বছরে ৳50,000 পর্যন্ত "
-                "চিকিৎসা বিনামূল্যে পাওয়া যাবে। "
-                "A health card for every family covering up to ৳50,000/year in medical expenses "
+                "A health card for every family covering up to BDT 50,000/year in medical expenses "
                 "at government hospitals."
             ),
             "domain": "Healthcare"
         },
         {
-            "title": "ফ্রিল্যান্সিং ট্যাক্স প্রণোদনা (Freelancing Tax Incentive)",
+            "title": "Freelancing Tax Incentive",
             "description": (
-                "IT ফ্রিল্যান্সারদের আয়ের উপর ৫ বছর কর অব্যাহতি এবং সরকারি ডিজিটাল হাব স্থাপন। "
                 "5-year tax exemption on freelancing income + government digital hubs in every district."
             ),
             "domain": "Digital & Technology"

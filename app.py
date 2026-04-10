@@ -1,5 +1,5 @@
 """
-নাগরিক-GENESIS (NAGORIK-GENESIS): Synthetic Society Policy Simulator — Bangladesh Edition
+NAGORIK-GENESIS: Synthetic Society Policy Simulator — Bangladesh Edition
 Main Streamlit application entry point.
 
 A hybrid AI system that combines LLM-based micro-simulations with
@@ -43,7 +43,7 @@ logger = logging.getLogger(__name__)
 
 # Page configuration
 st.set_page_config(
-    page_title="নাগরিক-GENESIS",
+    page_title="NAGORIK-GENESIS",
     page_icon="🇧🇩",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -133,26 +133,24 @@ def main():
     initialize_session_state()
 
     # Title and description
-    st.markdown('<h1 class="main-header">🇧🇩 নাগরিক-GENESIS</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 class="main-header">🇧🇩 NAGORIK-GENESIS</h1>', unsafe_allow_html=True)
     st.markdown(
-        '<p class="subtitle">বাংলাদেশ নীতি সিমুলেটর — Synthetic Society Policy Simulator with Hybrid AI</p>',
+        '<p class="subtitle">Bangladesh Policy Simulator — Synthetic Society with Hybrid AI</p>',
         unsafe_allow_html=True
     )
 
     # Responsible AI disclaimer
     st.warning("""
-    ⚠️ **দায়িত্বশীল AI বিজ্ঞপ্তি / Responsible AI Disclaimer**
+    ⚠️ **Responsible AI Disclaimer**
 
-    এটি শুধুমাত্র অনুসন্ধানমূলক উদ্দেশ্যে একটি সিন্থেটিক সিমুলেশন। এটি বাস্তব জগতে প্রকৃত আচরণ
-    **পূর্বাভাস দেয় না**। এই টুলটি সম্ভাব্য পরিস্থিতি অন্বেষণ এবং সম্ভাব্য অন্ধ দাগগুলি হাইলাইট
-    করার জন্য ডিজাইন করা হয়েছে — বাস্তব তথ্য, সমীক্ষা বা বিশেষজ্ঞ বিশ্লেষণ প্রতিস্থাপন করার জন্য নয়।
+    This is a synthetic simulation for exploratory purposes only. It does NOT predict
+    real-world behavior. This tool is designed to explore possible scenarios and highlight
+    potential blind spots — not to replace real data, surveys, or expert analysis.
 
-    This is a synthetic simulation for exploratory purposes only. Results should be
-    interpreted as thought experiments, not predictive models. The neural network learns
-    from LLM outputs and approximates reactions for scalability.
+    Results should be interpreted as thought experiments, not predictive models.
+    The neural network learns from LLM outputs and approximates reactions for scalability.
 
-    সকল আয় এবং আর্থিক মান বাংলাদেশী টাকায় (৳ BDT)।
-    All income and financial values are in Bangladeshi Taka (৳ BDT).
+    All income and financial values are in Bangladeshi Taka (BDT).
     """)
 
     # Initialize LLM client
@@ -200,8 +198,8 @@ def main():
     config = render_sidebar_controls()
 
     # Generate population button
-    if st.sidebar.button("👥 নতুন জনসংখ্যা তৈরি করুন", use_container_width=True):
-        with st.spinner("জনসংখ্যা তৈরি হচ্ছে..."):
+    if st.sidebar.button("👥 Generate New Population", use_container_width=True):
+        with st.spinner("Generating population..."):
             try:
                 settings = get_settings()
                 population = generate_population(
@@ -219,7 +217,7 @@ def main():
         st.sidebar.info(f"Current population: {len(st.session_state.current_population)} citizens")
 
     # Train NN button
-    if st.sidebar.button("🧠 নিউরাল নেটওয়ার্ক প্রশিক্ষণ", use_container_width=True):
+    if st.sidebar.button("🧠 Train Neural Network", use_container_width=True):
         if st.session_state.total_training_samples < 500:
             st.sidebar.warning(f"Need at least 500 samples. Current: {st.session_state.total_training_samples}")
         else:
@@ -257,7 +255,7 @@ def main():
     # Run simulation if config is provided
     if config:
         if st.session_state.current_population is None:
-            with st.spinner("জনসংখ্যা তৈরি হচ্ছে..."):
+            with st.spinner("Generating population..."):
                 try:
                     population = generate_population(
                         size=config.population_size,
@@ -280,7 +278,7 @@ def main():
         knowledge_context = ""
         wk_client = st.session_state.get("web_knowledge_client")
         if wk_client and wk_client.is_available() and config.mode != "NN_ONLY":
-            with st.spinner("🌐 ওয়েব থেকে নীতির প্রসঙ্গ অনুসন্ধান করা হচ্ছে..."):
+            with st.spinner("🌐 Searching web for policy context..."):
                 try:
                     knowledge_context = wk_client.search_policy_context(
                         policy_title=config.policy.title,
@@ -292,7 +290,7 @@ def main():
                 except Exception as e:
                     st.warning(f"⚠️ Web knowledge search failed (continuing without): {e}")
 
-        with st.spinner(f"সিমুলেশন চলছে '{config.name}'..."):
+        with st.spinner(f"Running simulation '{config.name}'..."):
             try:
                 results = run_simulation_sync(
                     config,
@@ -315,7 +313,7 @@ def main():
                     st.session_state.training_dataset.save_to_csv(os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "llm_training_samples.csv"))
 
                 st.success(f"""
-                ✅ সিমুলেশন সম্পন্ন!
+                ✅ Simulation complete!
                 - Collected {new_samples.size()} new training samples
                 - Total training samples: {st.session_state.total_training_samples}
                 """)
@@ -324,7 +322,7 @@ def main():
                 # Generate expert summary for final step
                 if results["step_stats"]:
                     final_stats = results["step_stats"][-1]
-                    with st.spinner("বিশেষজ্ঞ সারসংক্ষেপ তৈরি হচ্ছে..."):
+                    with st.spinner("Generating expert summary..."):
                         try:
                             summary = st.session_state.summary_client.generate_expert_summary(
                                 {
@@ -365,12 +363,12 @@ def main():
         selected_step = st.slider("Select Step", 0, max_step, max_step)
 
         tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-            "📊 সারসংক্ষেপ",
-            "👥 গোষ্ঠী",
-            "👤 নাগরিক",
-            "🎓 বিশেষজ্ঞ",
+            "📊 Summary",
+            "👥 Groups",
+            "👤 Citizens",
+            "🎓 Experts",
             "🧠 NN Analytics",
-            "📂 দৃশ্যকল্প"
+            "📂 Scenarios"
         ])
 
         with tab1:
@@ -400,12 +398,12 @@ def main():
 
     else:
         st.info("""
-        👋 **নাগরিক-GENESIS-এ স্বাগতম!** / Welcome to নাগরিক-GENESIS!
+        👋 **Welcome to NAGORIK-GENESIS!**
 
-        শুরু করতে:
-        1. সাইডবার থেকে একটি নীতি প্রিসেট নির্বাচন করুন বা আপনার নিজের তৈরি করুন
-        2. একটি সিমুলেশন মোড নির্বাচন করুন (LLM_ONLY, HYBRID, or NN_ONLY)
-        3. "🚀 সিমুলেশন চালান" বোতামে ক্লিক করুন
+        To get started:
+        1. Select a policy preset from the sidebar or create your own
+        2. Choose a simulation mode (LLM_ONLY, HYBRID, or NN_ONLY)
+        3. Click the "🚀 Run Simulation" button
 
         **Hybrid AI Architecture:**
         - Start with LLM_ONLY mode to collect training data

@@ -1,5 +1,5 @@
 """
-Statistics computation module for নাগরিক-GENESIS.
+Statistics computation module for NAGORIK-GENESIS.
 Aggregate and analyze simulation step data.
 Adds by_division and by_religion groupings for Bangladesh context.
 """

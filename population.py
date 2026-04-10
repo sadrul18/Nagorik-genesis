@@ -1,5 +1,5 @@
 """
-Population generation module for নাগরিক-GENESIS (NAGORIK-GENESIS).
+Population generation module for NAGORIK-GENESIS.
 Generate synthetic Bangladeshi citizen populations with controllable distributions.
 """
 import numpy as np
@@ -160,11 +160,11 @@ def generate_population(
 
         # Base income depends on income level (monthly BDT)
         if income_level == "low":
-            base_income = float(rng.uniform(8000, 15000))      # ৳8,000–৳15,000/month
+            base_income = float(rng.uniform(8000, 15000))      # BDT 8,000–15,000/month
         elif income_level == "middle":
-            base_income = float(rng.uniform(20000, 60000))     # ৳20,000–৳60,000/month
+            base_income = float(rng.uniform(20000, 60000))     # BDT 20,000–60,000/month
         else:  # high
-            base_income = float(rng.uniform(80000, 500000))    # ৳80,000–৳5,00,000/month
+            base_income = float(rng.uniform(80000, 500000))    # BDT 80,000–500,000/month
 
         citizen = Citizen(
             id=i,

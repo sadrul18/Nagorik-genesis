@@ -1,5 +1,5 @@
 """
-Machine Learning data management for নাগরিক-GENESIS.
+Machine Learning data management for NAGORIK-GENESIS.
 Handle training dataset creation, storage, and management.
 Dimension-agnostic — works with any feature vector size (40-dim for BD).
 """

@@ -1,5 +1,5 @@
 """
-Core data models and domain structures for নাগরিক-GENESIS (NAGORIK-GENESIS).
+Core data models and domain structures for NAGORIK-GENESIS.
 Defines citizens, states, policies, and simulation results — localized for Bangladesh.
 """
 from dataclasses import dataclass, field

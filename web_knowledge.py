@@ -1,5 +1,5 @@
 """
-Web Knowledge Retrieval for নাগরিক-GENESIS.
+Web Knowledge Retrieval for NAGORIK-GENESIS.
 Search the web for real-world context about a policy, cache results,
 and inject as knowledge context into LLM prompts.
 

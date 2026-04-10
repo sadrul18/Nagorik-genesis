@@ -1,5 +1,5 @@
 """
-Configuration module for নাগরিক-GENESIS (NAGORIK-GENESIS).
+Configuration module for NAGORIK-GENESIS.
 Centralize configuration and environment variables for Bangladesh policy simulator.
 """
 import os

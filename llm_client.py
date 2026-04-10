@@ -1,4 +1,4 @@
-"""LLM client for নাগরিক-GENESIS.
+"""LLM client for NAGORIK-GENESIS.
 Supports two backends:
   - ollama  : fully local, unlimited, no quota (default)
   - gemini  : Google Gemini API with automatic key rotation
@@ -177,12 +177,12 @@ class GeminiClient:
         Returns:
             Dict with new_happiness, new_policy_support, income_delta, short_reason, diary_entry.
         """
-        system_prompt = """You are simulating how a fictional Bangladeshi citizen (নাগরিক) reacts to a new government policy or event.
+        system_prompt = """You are simulating how a fictional Bangladeshi citizen reacts to a new government policy or event.
 You receive citizen_profile, current_state, and policy.
 
-CRITICAL CONTEXT — BANGLADESH (বাংলাদেশ):
-- Currency: BDT (৳ Bangladeshi Taka). All income values are MONTHLY in BDT. ৳1 USD ≈ ৳110 BDT.
-- Income context: ৳8,000-15,000/month = low income (গরিব). ৳20,000-60,000 = middle class (মধ্যবিত্ত). ৳80,000+ = upper class (উচ্চবিত্ত).
+CRITICAL CONTEXT — BANGLADESH:
+- Currency: BDT (Bangladeshi Taka). All income values are MONTHLY in BDT. 1 USD ≈ 110 BDT.
+- Income context: 8,000-15,000/month = low income (poor). 20,000-60,000 = middle class. 80,000+ = upper class.
 - Economy: 7th largest by PPP in Asia. GDP growth ~6-7%. Inflation ~9%.
 - Key sectors: Ready-Made Garments (RMG) employs 4M+ workers (80% women). Agriculture employs 40% of workforce. Remittance is 6% of GDP.
 - Geography: Bangladesh is a low-lying delta, extremely vulnerable to floods, cyclones, and rising sea levels. Northern districts face drought.
@@ -193,7 +193,7 @@ CRITICAL CONTEXT — BANGLADESH (বাংলাদেশ):
 - Digital: 130M+ internet users. bKash/Nagad mobile financial services widely used. Growing IT freelancing sector.
 
 CITIZEN ATTRIBUTE GUIDANCE:
-- Respect profession context: A garment worker (গার্মেন্ট শ্রমিক) earning ৳12,000/month will react very differently to a wage policy than a corporate executive earning ৳300,000.
+- Respect profession context: A garment worker earning BDT 12,000/month will react very differently to a wage policy than a corporate executive earning BDT 300,000.
 - Respect city_zone: A bosti resident faces existential risk from eviction policies. A graam (village) resident cares deeply about crop prices and flood relief.
 - Respect political_view: government_supporter vs opposition_supporter will interpret the same policy differently.
 - Respect is_remittance_family: Families receiving remittance have different financial resilience and priorities.
@@ -204,7 +204,7 @@ Output ONLY valid JSON with these exact keys:
 - new_policy_support: float between -1 and 1
 - income_delta: float in BDT (change in MONTHLY income, can be negative, zero, or positive)
 - short_reason: string, 1-2 sentences explaining the reaction
-- diary_entry: string, 3-5 sentences in first-person perspective as a Bangladeshi citizen. May include Bengali words/phrases naturally.
+- diary_entry: string, 3-5 sentences in first-person perspective as a Bangladeshi citizen.
 
 Do not include any explanation outside the JSON."""
 
@@ -267,13 +267,13 @@ Generate the citizen's reaction as JSON."""
 
 Generate FOUR expert perspectives grounded in Bangladeshi socioeconomic reality:
 
-1. অর্থনীতিবিদ (Economist): Focus on BDT income effects, inflation impact, GDP implications, remittance effects, employment shifts, and fiscal sustainability. Reference Bangladesh Bank data context where relevant.
+1. Economist: Focus on BDT income effects, inflation impact, GDP implications, remittance effects, employment shifts, and fiscal sustainability. Reference Bangladesh Bank data context where relevant.
 
-2. সমাজকর্মী (Social Activist / NGO Leader): Focus on poverty impact, bosti (slum) dwellers, garment workers' welfare, gender equity, child labor risk, and marginalized communities (Hijra, ethnic minorities). Reference NGO sector context (BRAC, Grameen).
+2. Social Activist / NGO Leader: Focus on poverty impact, bosti (slum) dwellers, garment workers' welfare, gender equity, child labor risk, and marginalized communities (Hijra, ethnic minorities). Reference NGO sector context (BRAC, Grameen).
 
-3. গার্মেন্ট শিল্প প্রতিনিধি (Garment Industry Representative): Focus on RMG sector competitiveness, worker retention, export impact, buyer compliance requirements, factory-level effects. This sector is 84% of Bangladesh's $40B+ exports.
+3. Garment Industry Representative: Focus on RMG sector competitiveness, worker retention, export impact, buyer compliance requirements, factory-level effects. This sector is 84% of Bangladesh's $40B+ exports.
 
-4. গ্রামীণ নেতা (Rural Community Leader): Focus on agricultural impact, rural employment, climate vulnerability, flood/cyclone resilience, food security, and rural-urban migration pressure. 63% of Bangladesh is rural.
+4. Rural Community Leader: Focus on agricultural impact, rural employment, climate vulnerability, flood/cyclone resilience, food security, and rural-urban migration pressure. 63% of Bangladesh is rural.
 
 Use the simulation metrics to ground your reasoning. Highlight which demographic groups in Bangladesh are most affected.
 
@@ -312,10 +312,10 @@ Generate expert perspectives as JSON."""
             else:
                 logger.warning("Failed to parse expert summary, using fallback")
                 return {
-                    "economist_view": "বিশ্লেষণ পার্সিং ত্রুটির কারণে অনুপলব্ধ।",
-                    "activist_view": "বিশ্লেষণ পার্সিং ত্রুটির কারণে অনুপলব্ধ।",
-                    "garment_industry_view": "বিশ্লেষণ পার্সিং ত্রুটির কারণে অনুপলব্ধ।",
-                    "rural_leader_view": "বিশ্লেষণ পার্সিং ত্রুটির কারণে অনুপলব্ধ।"
+                    "economist_view": "Analysis unavailable due to parsing error.",
+                    "activist_view": "Analysis unavailable due to parsing error.",
+                    "garment_industry_view": "Analysis unavailable due to parsing error.",
+                    "rural_leader_view": "Analysis unavailable due to parsing error."
                 }
 
         except Exception as e:
@@ -332,13 +332,13 @@ Generate expert perspectives as JSON."""
             income_level = "above average" if avg_income > 30000 else "below average" if avg_income < 15000 else "moderate"
 
             return {
-                "economist_view": f"The {policy_title} shows {happiness_trend} economic sentiment with average income at ৳{avg_income:,.0f}. Citizens are {support_trend} of this {policy_domain} policy. The {income_level} income levels suggest varying distributional effects across Bangladesh's economic strata, particularly impacting remittance-dependent families and the informal sector.",
+                "economist_view": f"The {policy_title} shows {happiness_trend} economic sentiment with average income at BDT {avg_income:,.0f}. Citizens are {support_trend} of this {policy_domain} policy. The {income_level} income levels suggest varying distributional effects across Bangladesh's economic strata, particularly impacting remittance-dependent families and the informal sector.",
 
                 "activist_view": f"This {policy_domain} policy reveals concerning social dynamics. With {avg_happiness:.1%} average happiness and {support_trend} public opinion, marginalized communities — bosti dwellers, Hijra citizens, and religious minorities — face disproportionate impact. Stronger protective measures are needed for the most vulnerable Bangladeshis.",
 
-                "garment_industry_view": f"From the RMG sector perspective, the {policy_title} creates {happiness_trend} conditions for Bangladesh's garment export industry. With average worker income at ৳{avg_income:,.0f}, any policy shift directly affects the 4 million+ garment workers and factory compliance. The {support_trend} sentiment signals potential labor market adjustments.",
+                "garment_industry_view": f"From the RMG sector perspective, the {policy_title} creates {happiness_trend} conditions for Bangladesh's garment export industry. With average worker income at BDT {avg_income:,.0f}, any policy shift directly affects the 4 million+ garment workers and factory compliance. The {support_trend} sentiment signals potential labor market adjustments.",
 
-                "rural_leader_view": f"For rural Bangladesh, the {policy_title} has {happiness_trend} implications. Agricultural livelihoods and fishing communities with ৳{avg_income:,.0f} average income face unique challenges from this {policy_domain} policy. The {support_trend} response from rural citizens highlights the need for localized implementation sensitive to flood-prone and char areas."
+                "rural_leader_view": f"For rural Bangladesh, the {policy_title} has {happiness_trend} implications. Agricultural livelihoods and fishing communities with BDT {avg_income:,.0f} average income face unique challenges from this {policy_domain} policy. The {support_trend} response from rural citizens highlights the need for localized implementation sensitive to flood-prone and char areas."
             }
 
 
@@ -352,12 +352,12 @@ def create_gemini_client(api_key: str, backup_keys: Optional[List[str]] = None) 
 # ─────────────────────────────────────────────────────────────────────────────
 
 # Shared system prompts (same as GeminiClient, defined once to avoid duplication)
-_CITIZEN_SYSTEM_PROMPT = """You are simulating how a fictional Bangladeshi citizen (নাগরিক) reacts to a new government policy or event.
+_CITIZEN_SYSTEM_PROMPT = """You are simulating how a fictional Bangladeshi citizen reacts to a new government policy or event.
 You receive citizen_profile, current_state, and policy.
 
-CRITICAL CONTEXT — BANGLADESH (বাংলাদেশ):
-- Currency: BDT (৳ Bangladeshi Taka). All income values are MONTHLY in BDT. ৳1 USD ≈ ৳110 BDT.
-- Income context: ৳8,000-15,000/month = low income (গরিব). ৳20,000-60,000 = middle class (মধ্যবিত্ত). ৳80,000+ = upper class (উচ্চবিত্ত).
+CRITICAL CONTEXT — BANGLADESH:
+- Currency: BDT (Bangladeshi Taka). All income values are MONTHLY in BDT. 1 USD ≈ 110 BDT.
+- Income context: 8,000-15,000/month = low income (poor). 20,000-60,000 = middle class. 80,000+ = upper class.
 - Economy: 7th largest by PPP in Asia. GDP growth ~6-7%. Inflation ~9%.
 - Key sectors: Ready-Made Garments (RMG) employs 4M+ workers (80% women). Agriculture employs 40% of workforce. Remittance is 6% of GDP.
 - Geography: Bangladesh is a low-lying delta, extremely vulnerable to floods, cyclones, and rising sea levels. Northern districts face drought.
@@ -378,10 +378,10 @@ Do not include any explanation outside the JSON."""
 _EXPERT_SYSTEM_PROMPT = """You are analyzing a synthetic Bangladesh society simulation.
 Generate FOUR expert perspectives grounded in Bangladeshi socioeconomic reality.
 
-1. অর্থনীতিবিদ (Economist): BDT income effects, inflation, GDP, remittance, employment.
-2. সমাজকর্মী (Social Activist): poverty, bosti dwellers, garment workers, gender equity, NGO context (BRAC, Grameen).
-3. গার্মেন্ট শিল্প প্রতিনিধি (Garment Industry): RMG sector, worker retention, export ($40B+), compliance.
-4. গ্রামীণ নেতা (Rural Leader): agriculture, flood/cyclone resilience, food security, rural-urban migration.
+1. Economist: BDT income effects, inflation, GDP, remittance, employment.
+2. Social Activist: poverty, bosti dwellers, garment workers, gender equity, NGO context (BRAC, Grameen).
+3. Garment Industry Representative: RMG sector, worker retention, export ($40B+), compliance.
+4. Rural Leader: agriculture, flood/cyclone resilience, food security, rural-urban migration.
 
 Output ONLY valid JSON with keys:
 - economist_view: string 3-5 sentences

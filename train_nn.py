@@ -1,5 +1,5 @@
 """
-Train the MLP neural network for নাগরিক-GENESIS.
+Train the MLP neural network for NAGORIK-GENESIS.
 Combines LLM-generated samples + rule-based samples, trains the NN, saves model + scaler.
 
 Usage:
@@ -22,7 +22,7 @@ from nn_model import CitizenReactionModel
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Train নাগরিক-GENESIS MLP model")
+    parser = argparse.ArgumentParser(description="Train NAGORIK-GENESIS MLP model")
     parser.add_argument("--llm-weight", type=float, default=2.0,
                         help="How many times to repeat LLM samples vs rule-based (default: 2.0)")
     parser.add_argument("--epochs", type=int, default=500,
@@ -38,7 +38,7 @@ def main():
     hidden_layers = tuple(int(x) for x in args.layers.split(","))
 
     print("=" * 60)
-    print("  নাগরিক-GENESIS — Neural Network Training")
+    print("  NAGORIK-GENESIS — Neural Network Training")
     print("=" * 60)
 
     # ── Load LLM data ────────────────────────────────────────

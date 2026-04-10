@@ -1,5 +1,5 @@
 """
-Neural Network model for নাগরিক-GENESIS.
+Neural Network model for NAGORIK-GENESIS.
 Train and use an MLP to approximate LLM-generated citizen reactions.
 Default architecture: (128, 64, 32) for 40-dimensional feature space.
 """
@@ -60,7 +60,7 @@ class CitizenReactionModel:
         Train the model on LLM-generated samples.
 
         Args:
-            X_train: Training features (40-dim for নাগরিক-GENESIS).
+            X_train: Training features (40-dim for NAGORIK-GENESIS).
             Y_train: Training targets [delta_h, delta_s, delta_i].
             X_val: Validation features (optional).
             Y_val: Validation targets (optional).
@@ -179,7 +179,7 @@ def train_reaction_model(
     Train a citizen reaction model with automatic train/test split.
 
     Args:
-        X: Feature array (40-dim for নাগরিক-GENESIS).
+        X: Feature array (40-dim for NAGORIK-GENESIS).
         Y: Target array.
         test_size: Proportion for validation set.
         hidden_layers: Hidden layer sizes. Default (128,64,32).

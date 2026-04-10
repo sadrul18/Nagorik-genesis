@@ -1,5 +1,5 @@
 """
-Simulation quality verification for নাগরিক-GENESIS.
+Simulation quality verification for NAGORIK-GENESIS.
 Runs rule-based simulations (no API key needed) across all 8 policy presets
 and validates that the simulation mechanics produce realistic outputs.
 
@@ -147,7 +147,7 @@ def generate_training_data(citizens, all_states_by_policy, presets):
 
 def main():
     print("=" * 80)
-    print("  নাগরিক-GENESIS — Simulation Quality Verification")
+    print("  NAGORIK-GENESIS — Simulation Quality Verification")
     print("=" * 80)
 
     # Generate population

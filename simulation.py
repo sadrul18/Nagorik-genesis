@@ -1,5 +1,5 @@
 """
-Core simulation engine for নাগরিক-GENESIS (NAGORIK-GENESIS).
+Core simulation engine for NAGORIK-GENESIS.
 Runs multi-step simulations using LLM, NN, and rule-based updates — Bangladesh context.
 """
 import numpy as np

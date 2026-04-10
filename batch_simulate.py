@@ -35,7 +35,7 @@ def main():
     args = parser.parse_args()
 
     print("=" * 60)
-    print("  নাগরিক-GENESIS — Batch LLM Simulation")
+    print("  NAGORIK-GENESIS — Batch LLM Simulation")
     print("=" * 60)
 
     # Load settings and create client

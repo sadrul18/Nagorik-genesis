@@ -1,7 +1,7 @@
 """
-UI sections for নাগরিক-GENESIS Streamlit app.
+UI sections for NAGORIK-GENESIS Streamlit app.
 Modular functions for rendering different parts of the interface.
-Bangladesh-localized with ৳ BDT currency, BD zones, divisions, 4 experts.
+Bangladesh-localized with BDT currency, BD zones, divisions, 4 experts.
 """
 import streamlit as st
 import pandas as pd
@@ -23,10 +23,10 @@ def render_sidebar_controls() -> Optional[SimulationConfig]:
     Returns:
         SimulationConfig object if user clicks run, None otherwise.
     """
-    st.sidebar.title("⚙️ সিমুলেশন নিয়ন্ত্রণ")
+    st.sidebar.title("⚙️ Simulation Controls")
 
     # Population settings
-    st.sidebar.subheader("জনসংখ্যা")
+    st.sidebar.subheader("Population")
     population_size = st.sidebar.slider(
         "Population Size",
         min_value=100,
@@ -74,7 +74,7 @@ def render_sidebar_controls() -> Optional[SimulationConfig]:
         random_seed = st.sidebar.number_input("Seed", value=42, min_value=0)
 
     # Policy configuration
-    st.sidebar.subheader("নীতি কনফিগারেশন")
+    st.sidebar.subheader("Policy Configuration")
 
     presets = get_policy_presets()
     preset_names = ["Custom"] + [p["title"] for p in presets]
@@ -110,7 +110,7 @@ def render_sidebar_controls() -> Optional[SimulationConfig]:
     )
 
     # Run button
-    run_simulation = st.sidebar.button("🚀 সিমুলেশন চালান", type="primary", use_container_width=True)
+    run_simulation = st.sidebar.button("🚀 Run Simulation", type="primary", use_container_width=True)
 
     if run_simulation and policy_title and policy_description:
         config = SimulationConfig(
@@ -172,7 +172,7 @@ def render_learning_status_panel(
 
 def render_overview_tab(step_stats: List[StepStats], current_step: int):
     """Render the overview tab with time-series charts and key metrics."""
-    st.subheader("📊 সিমুলেশন সারসংক্ষেপ")
+    st.subheader("📊 Simulation Summary")
 
     if not step_stats:
         st.info("No simulation data available. Run a simulation to see results.")
@@ -183,7 +183,7 @@ def render_overview_tab(step_stats: List[StepStats], current_step: int):
             "Step": s.step,
             "Avg Happiness": s.avg_happiness,
             "Avg Support": s.avg_support,
-            "Avg Income (৳)": s.avg_income
+            "Avg Income (BDT)": s.avg_income
         }
         for s in step_stats
     ])
@@ -207,8 +207,8 @@ def render_overview_tab(step_stats: List[StepStats], current_step: int):
         st.plotly_chart(fig_support, use_container_width=True)
 
     fig_income = px.line(
-        df, x="Step", y="Avg Income (৳)",
-        title="Average Income Over Time (৳ BDT)", markers=True
+        df, x="Step", y="Avg Income (BDT)",
+        title="Average Income Over Time (BDT)", markers=True
     )
     st.plotly_chart(fig_income, use_container_width=True)
 
@@ -350,7 +350,7 @@ def render_citizens_tab(
     current_step: int
 ):
     """Render the citizens tab with individual citizen browser."""
-    st.subheader("👤 নাগরিক ব্রাউজার")
+    st.subheader("👤 Citizen Browser")
 
     if not citizens or not all_states:
         st.info("No citizen data available.")
@@ -479,7 +479,7 @@ def render_citizen_detail(
             "Step": s.step,
             "Happiness": s.happiness,
             "Support": s.policy_support,
-            "Income (৳)": s.income
+            "Income (BDT)": s.income
         }
         for s in citizen_states
     ])
@@ -498,7 +498,7 @@ def render_citizen_detail(
         st.plotly_chart(fig, use_container_width=True)
 
     # Diary entries
-    st.write("**ডায়েরি এন্ট্রি**")
+    st.write("**Diary Entries**")
     diary_states = [s for s in citizen_states if s.diary_entry]
 
     if diary_states:
@@ -511,7 +511,7 @@ def render_citizen_detail(
 
 def render_experts_tab(expert_summary: Optional[Dict[str, str]]):
     """Render the experts tab with 4 Bangladesh-specific AI-generated summaries."""
-    st.subheader("🎓 বিশেষজ্ঞ দৃষ্টিভঙ্গি")
+    st.subheader("🎓 Expert Perspectives")
 
     if not expert_summary:
         st.info("No expert summary available. Run a simulation first.")
@@ -520,23 +520,23 @@ def render_experts_tab(expert_summary: Optional[Dict[str, str]]):
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown("### 💼 অর্থনীতিবিদ (Economist)")
+        st.markdown("### 💼 Economist")
         st.write(expert_summary.get("economist_view", "No view available."))
 
-        st.markdown("### 🏭 পোশাক শিল্প বিশ্লেষক (RMG Analyst)")
+        st.markdown("### 🏭 RMG Analyst")
         st.write(expert_summary.get("garment_industry_view", "No view available."))
 
     with col2:
-        st.markdown("### ✊ সামাজিক কর্মী (Social Activist)")
+        st.markdown("### ✊ Social Activist")
         st.write(expert_summary.get("activist_view", "No view available."))
 
-        st.markdown("### 🌾 গ্রামীণ নেতা (Rural Leader)")
+        st.markdown("### 🌾 Rural Leader")
         st.write(expert_summary.get("rural_leader_view", "No view available."))
 
 
 def render_scenarios_tab(scenarios: Dict[str, Any]):
     """Render the scenarios tab for comparing multiple simulation runs."""
-    st.subheader("📂 দৃশ্যকল্প ব্যবস্থাপনা")
+    st.subheader("📂 Scenario Management")
 
     if not scenarios:
         st.info("No scenarios available. Run simulations to create scenarios.")
