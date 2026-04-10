@@ -197,7 +197,8 @@ def run_simulation(
     citizens: List[Citizen],
     llm_client: Any,
     existing_model: Optional[Any] = None,
-    feature_scaler: Optional[Any] = None
+    feature_scaler: Optional[Any] = None,
+    target_scaler: Optional[Any] = None
 ) -> Dict[str, Any]:
     """
     Run a multi-step simulation of Bangladeshi citizen reactions to a policy.
@@ -211,6 +212,7 @@ def run_simulation(
         llm_client: GeminiClient instance for LLM calls.
         existing_model: Pre-trained CitizenReactionModel (optional).
         feature_scaler: Feature scaler for NN (optional).
+        target_scaler: Target scaler for inverse-transforming NN predictions (optional).
 
     Returns:
         Dict containing simulation results, states, stats, and training data.
@@ -356,6 +358,8 @@ def run_simulation(
                                 X_scaled = X.reshape(1, -1)
 
                             deltas = existing_model.predict(X_scaled)[0]
+                            if target_scaler is not None:
+                                deltas = target_scaler.inverse_transform(deltas.reshape(1, -1))[0]
                             new_happiness, new_policy_support, new_income = apply_deltas(prev_state, deltas)
 
                             new_state = CitizenState(
@@ -417,6 +421,8 @@ def run_simulation(
                         raise ValueError("Neural network model is None - cannot predict")
 
                     deltas = existing_model.predict(X_scaled)[0]
+                    if target_scaler is not None:
+                        deltas = target_scaler.inverse_transform(deltas.reshape(1, -1))[0]
                     new_happiness, new_policy_support, new_income = apply_deltas(prev_state, deltas)
 
                     nn_time = time.time() - nn_start

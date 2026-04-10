@@ -11,6 +11,7 @@ from pathlib import Path
 import sys
 import os
 import pandas as pd
+import joblib
 
 # Add current directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent))
@@ -82,16 +83,28 @@ def initialize_session_state():
             if model and model.is_trained:
                 st.session_state.nn_model = model
                 st.session_state.feature_scaler = getattr(model, 'scaler', None)
+                # Load target scaler for inverse-transforming NN predictions
+                target_scaler_path = Path("models/target_scaler.joblib")
+                if target_scaler_path.exists():
+                    st.session_state.target_scaler = joblib.load(target_scaler_path)
+                    logger.info("✅ Loaded target scaler for NN prediction inverse transform")
+                else:
+                    st.session_state.target_scaler = None
+                    logger.warning("⚠️ target_scaler.joblib not found — NN predictions will be in scaled space")
                 logger.info(f"✅ Loaded existing NN model (trained: {model.is_trained})")
             else:
                 st.session_state.nn_model = None
                 st.session_state.feature_scaler = None
+                st.session_state.target_scaler = None
         except Exception as e:
             logger.info(f"No existing NN model found: {e}")
             st.session_state.nn_model = None
 
     if "feature_scaler" not in st.session_state:
         st.session_state.feature_scaler = None
+
+    if "target_scaler" not in st.session_state:
+        st.session_state.target_scaler = None
 
     if "total_training_samples" not in st.session_state:
         st.session_state.total_training_samples = 0
@@ -109,9 +122,9 @@ def initialize_session_state():
         st.session_state.summary_client = None
 
 
-def run_simulation_sync(config, citizens, llm_client, nn_model, feature_scaler):
+def run_simulation_sync(config, citizens, llm_client, nn_model, feature_scaler, target_scaler=None):
     """Run simulation synchronously."""
-    return run_simulation(config, citizens, llm_client, nn_model, feature_scaler)
+    return run_simulation(config, citizens, llm_client, nn_model, feature_scaler, target_scaler)
 
 
 def main():
@@ -258,7 +271,8 @@ def main():
                     st.session_state.current_population,
                     st.session_state.llm_client,
                     st.session_state.nn_model,
-                    st.session_state.feature_scaler
+                    st.session_state.feature_scaler,
+                    st.session_state.target_scaler
                 )
 
                 st.session_state.scenarios[config.name] = results
