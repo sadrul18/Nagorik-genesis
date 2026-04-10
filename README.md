@@ -1,350 +1,227 @@
-# Nagorik Genesis: Implementation Plan
-
-> Bangladesh Policy Simulator — a synthetic society platform powered by hybrid AI.
-
----
-
-## Table of Contents
-
-1. [Vision](#1-vision)
-2. [Product Goals](#2-product-goals)
-3. [Core System Design](#3-core-system-design)
-4. [Implementation Roadmap](#4-implementation-roadmap)
-5. [Milestone Plan](#5-milestone-plan)
-6. [Data & Model Strategy](#6-data--model-strategy)
-7. [Testing Strategy](#7-testing-strategy)
-8. [Launch Plan](#8-launch-plan)
-9. [Future Direction](#9-future-direction)
+<p align="center">
+  <h1 align="center">NAGORIK-GENESIS</h1>
+  <p align="center">
+    <strong>Synthetic Society Policy Simulator — Bangladesh Edition</strong>
+  </p>
+  <p align="center">
+    A hybrid AI system that simulates how 1,000–50,000 synthetic Bangladeshi citizens react to policy changes, combining LLM reasoning with neural network scalability.
+  </p>
+</p>
 
 ---
 
-## 1. Vision
+## The Problem
 
-Nagorik Genesis will become a Bangladesh-focused synthetic society simulator for exploring how policies may affect different groups of citizens over time.
+Bangladesh makes policy for **170 million people** with no way to pre-test the impact on diverse communities — garment workers, tech entrepreneurs, rural farmers, urban slum dwellers — before rolling it out nationwide.
 
-The platform will help users test policy ideas, observe simulated citizen reactions, compare demographic impact, and scale analysis through a hybrid AI pipeline that combines LLM reasoning, neural-network inference, and deterministic rule-based fallback.
+## The Solution
 
-| Layer | Purpose |
-|-------|---------|
-| Synthetic population | Will generate realistic Bangladeshi citizen profiles |
-| Policy simulation | Will model citizen reactions across multiple time steps |
-| LLM reasoning | Will generate nuanced individual reactions and diary entries |
-| Neural network | Will learn from LLM reactions and scale simulations quickly |
-| Rule engine | Will keep simulations running without API dependency |
-| Analytics dashboard | Will expose trends, group differences, and scenario comparisons |
+NAGORIK-GENESIS generates a **synthetic population** mirroring Bangladesh's real demographics (8 divisions, income strata, professions, religions, political views) and simulates citizen reactions to any proposed policy using a three-engine hybrid AI approach.
 
 ---
 
-## 2. Product Goals
+## Features
 
-| Goal | Outcome |
-|------|---------|
-| Simulate Bangladesh policy impact | Users will test policies across income, geography, religion, profession, and remittance status |
-| Support multiple simulation modes | LLM_ONLY, HYBRID, and NN_ONLY modes will support accuracy, balance, and scale |
-| Make results explainable | Citizen diaries and expert views will make aggregate numbers easier to interpret |
-| Scale beyond manual LLM calls | Neural-network inference will allow large population runs without high API usage |
-| Stay usable with limited resources | Ollama, Gemini, and rule-based fallback will support multiple runtime options |
-| Keep outputs responsible | The product will present results as synthetic scenario exploration, not real-world prediction |
+- **Synthetic Population Engine** — Generates demographically accurate citizens across all 8 divisions with realistic income distributions (55% low / 35% middle / 10% high)
+- **Three Simulation Modes**
+  - `LLM_ONLY` — Every citizen processed by LLM (highest quality, slowest)
+  - `NN_ONLY` — Pure neural network inference (fastest, needs training data)
+  - `HYBRID` — Stratified LLM anchors + calibrated NN predictions (recommended)
+- **Web Knowledge Enrichment** — Real-time policy context from Tavily / DuckDuckGo, summarized by the LLM before simulation
+- **Expert Panel** — AI-generated analysis from 4 perspectives: Economist, Social Rights Activist, RMG Industry Analyst, and Rural Community Leader
+- **8 Built-in Policy Presets** — Digital Taka (CBDC), Universal Basic Income, Climate Resilience Fund, RMG Minimum Wage Hike, EdTech for Madrasas, and more
+- **Interactive Dashboard** — Streamlit UI with overview, demographic breakdowns, individual citizen diaries, and Plotly visualizations
+- **Neural Network Learning** — MLP learns from LLM outputs across runs, continuously improving prediction quality
+- **Scenario Comparison** — Run multiple policies side-by-side and compare outcomes
 
 ---
 
-## 3. Core System Design
+## Architecture
 
-```text
-Nagorik Genesis
-├── Streamlit application
-│   ├── Sidebar controls
-│   ├── Simulation dashboard
-│   ├── Citizen browser
-│   ├── Expert perspectives
-│   └── Scenario comparison
-├── Simulation core
-│   ├── Population generation
-│   ├── Policy configuration
-│   ├── LLM / NN / rule routing
-│   └── Step-by-step state updates
-├── AI layer
-│   ├── Gemini adapter
-│   ├── Ollama adapter
-│   ├── JSON validation
-│   └── fallback summaries
-├── ML layer
-│   ├── Training sample dataset
-│   ├── Feature engineering
-│   ├── MLP reaction model
-│   └── model + scaler persistence
-└── Analytics layer
-    ├── Time-series metrics
-    ├── Income group analysis
-    ├── Zone and division analysis
-    ├── Religion and remittance analysis
-    └── scenario comparison
+```
+┌─────────────────────────────────────────────────────────┐
+│                    Streamlit UI (app.py)                 │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│  ┌─────────────┐  ┌──────────────┐  ┌───────────────┐  │
+│  │  Population  │  │  Simulation  │  │ Web Knowledge │  │
+│  │  Generator   │  │   Engine     │  │   Pipeline    │  │
+│  │ (population) │  │ (simulation) │  │(web_knowledge)│  │
+│  └──────┬──────┘  └──────┬───────┘  └───────┬───────┘  │
+│         │                │                   │          │
+│         ▼                ▼                   ▼          │
+│  ┌─────────────────────────────────────────────────┐    │
+│  │              LLM Client (Ollama / Gemini)       │    │
+│  └─────────────────────────────────────────────────┘    │
+│         │                │                              │
+│         ▼                ▼                              │
+│  ┌──────────────┐ ┌──────────────┐                     │
+│  │  NN Model    │ │  ML Dataset  │                     │
+│  │ (MLPRegress) │ │  (ml_data)   │                     │
+│  └──────────────┘ └──────────────┘                     │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
 ```
 
-| Component | Responsibility |
-|-----------|----------------|
-| Data models | Will define citizens, policies, simulation config, citizen states, and aggregate stats |
-| Population generator | Will create seeded Bangladeshi citizen profiles with realistic distributions |
-| Simulation engine | Will run multi-step policy simulations and choose the update method per citizen |
-| LLM client | Will generate structured citizen reactions and expert summaries |
-| ML dataset manager | Will save, load, and merge training samples |
-| Neural network model | Will train on LLM outputs and predict citizen reaction deltas |
-| Statistics module | Will compute population and group-level metrics |
-| UI modules | Will render controls, charts, citizen details, expert views, and scenario tools |
-
 ---
 
-## 4. Implementation Roadmap
+## Quick Start
 
-| Phase | Focus | Result |
-|-------|-------|--------|
-| Phase 1 | Product foundation | Project structure, configuration, domain constants, and dataclasses |
-| Phase 2 | Bangladesh population model | Realistic citizen generation with BDT income and local demographics |
-| Phase 3 | Simulation engine | Multi-step simulation with rule-based, LLM, and NN update paths |
-| Phase 4 | LLM integration | Gemini and Ollama support with structured JSON responses |
-| Phase 5 | ML pipeline | Training dataset, feature vectors, model training, and scaler-safe inference |
-| Phase 6 | Analytics dashboard | Streamlit UI with charts, filters, citizens, experts, and scenarios |
-| Phase 7 | Verification | Unit tests, simulation checks, ML smoke tests, and UI import checks |
-| Phase 8 | Launch readiness | Local setup, cloud configuration, documentation, and release checklist |
+### Prerequisites
 
----
+- **Python** 3.10+
+- **Ollama** installed and running locally ([install guide](https://ollama.ai))
 
-## 5. Milestone Plan
-
-### Phase 1 — Product Foundation
-
-Nagorik Genesis will begin with a clear product contract and a stable module layout.
-
-| Task | Deliverable |
-|------|-------------|
-| Define application settings | Runtime configuration for LLM backend, API keys, population limits, random seed, and NN parameters |
-| Define core dataclasses | Citizen, CitizenState, PolicyInput, SimulationConfig, StepStats, ExpertSummary |
-| Define domain constants | Policy domains, city zones, income levels, political views, genders, education levels, divisions, and religions |
-| Establish project commands | Local run, test, batch simulation, and training commands |
-| Add responsible AI copy | Clear positioning as synthetic scenario exploration |
-
-**Definition of done**: the project will have a typed foundation that every later layer can depend on.
-
-### Phase 2 — Bangladesh Population Model
-
-The population system will generate synthetic citizens grounded in Bangladesh context.
-
-| Attribute | Planned Model |
-|-----------|---------------|
-| Income | Monthly BDT income ranges for low, middle, and high-income groups |
-| Geography | Dhaka, Chittagong, Rajshahi, Khulna, Barisal, Sylhet, Rangpur, Mymensingh |
-| City zone | `shohor_kendro`, `shilpo_elaka`, `uposhohon`, `graam`, `bosti` |
-| Gender | Male, Female, Hijra |
-| Religion | Muslim, Hindu, Buddhist, Christian, Other |
-| Family profile | Zone-sensitive family size and remittance-family flag |
-| Education | No Formal Education, Madrasa Education, SSC, HSC, Honours/Bachelor's, Masters, PhD |
-| Profession | Income-aware professions such as garment worker, farmer, teacher, NGO worker, senior doctor, and factory owner |
-
-**Definition of done**: seeded population generation will produce valid, reproducible, Bangladesh-aware citizen profiles.
-
-### Phase 3 — Simulation Engine
-
-The simulation engine will update every citizen over one or more time steps.
-
-| Task | Deliverable |
-|------|-------------|
-| Initialize citizen states | Step 0 state from base happiness, income, and neutral policy support |
-| Run policy steps | Step-by-step updates for all citizens |
-| Route update method | LLM_ONLY, HYBRID, NN_ONLY, and rule-based fallback |
-| Maintain fast state lookup | Efficient access to previous citizen state |
-| Clamp state values | Happiness `[0,1]`, support `[-1,1]`, income `>=0` |
-| Track method usage | Per-step counts for LLM, NN, and rule-based updates |
-
-**Definition of done**: the simulator will run small LLM scenarios and large NN/rule-based scenarios with stable state transitions.
-
-### Phase 4 — LLM Integration
-
-The LLM layer will support cloud and local generation.
-
-| Backend | Role |
-|---------|------|
-| Gemini | Cloud LLM backend for high-quality structured responses |
-| Ollama | Local LLM backend for unlimited development and batch generation |
-
-| Task | Deliverable |
-|------|-------------|
-| Create backend factory | A single client factory will select Gemini or Ollama |
-| Design citizen prompt | Bangladesh-aware policy reaction prompt with strict JSON schema |
-| Design expert prompt | Economist, social activist, garment industry, and rural leader perspectives |
-| Validate JSON output | Numeric clamping and fallback values for malformed responses |
-| Handle quota and failures | Rate limiting, key rotation, safe logging, and graceful fallback |
-
-**Definition of done**: LLM-backed simulations will produce structured citizen reactions and expert summaries without making the app fragile.
-
-### Phase 5 — ML Pipeline
-
-The neural network will learn from LLM-generated examples and scale future simulations.
-
-| Task | Deliverable |
-|------|-------------|
-| Build feature vector | 40-dimensional Bangladesh-aware feature vector |
-| Store training samples | CSV dataset with features and target deltas |
-| Train reaction model | MLP model that predicts happiness, support, and income deltas |
-| Save model artifacts | Model file and feature scaler saved together |
-| Reload model safely | Model and scaler loaded together for inference |
-| Show training metrics | Train MAE, validation MAE, sample count, and readiness status |
-
-**Definition of done**: after enough LLM samples are collected, the app will train, save, reload, and use the NN for fast simulations.
-
-### Phase 6 — Analytics Dashboard
-
-The Streamlit interface will make the simulation interactive and explainable.
-
-| Area | Planned Capability |
-|------|--------------------|
-| Sidebar | Population size, time steps, mode, seed, policy preset, custom policy |
-| Learning status | LLM sample count, NN readiness, current mode |
-| Overview | Average happiness, support, income, and inequality over time |
-| Groups | Breakdown by income, zone, division, religion, and remittance |
-| Citizens | Filterable citizen table, detail view, timeline, diary entries |
-| Experts | Bangladesh-specific expert analysis |
-| NN Analytics | LLM/NN/rule usage, speed, estimated cost savings, training stats |
-| Scenarios | Saved runs and side-by-side comparison |
-
-**Definition of done**: a user will configure, run, inspect, train, and compare scenarios from one interface.
-
-### Phase 7 — Verification
-
-The project will be testable without requiring API keys.
-
-| Test Layer | Purpose |
-|------------|---------|
-| Unit tests | Constants, dataclasses, population generation, features, deltas, stats, ML dataset |
-| Rule-based simulation tests | Validate bounds, income behavior, domain coverage, and group stats |
-| ML smoke tests | Train, predict, save, load, and apply deltas |
-| Import smoke tests | Confirm runtime dependencies are installed |
-| Manual UI checks | Confirm Streamlit app launches and renders controls |
-
-**Definition of done**: local tests will validate core behavior, while LLM-specific tests will remain optional and clearly documented.
-
-### Phase 8 — Launch Readiness
-
-Nagorik Genesis will ship with clear setup and deployment paths.
-
-| Area | Deliverable |
-|------|-------------|
-| Local setup | `pip install -r requirements.txt` and `streamlit run app.py` |
-| Environment | `.env.example` with exact runtime variable names |
-| Streamlit Cloud | Secrets template and deployment notes |
-| Data generation | Batch simulation command for LLM training samples |
-| Model training | Offline and UI-based NN training paths |
-| Documentation | README, API key guide, simulation guide, testing report |
-
-**Definition of done**: a new user will be able to run a small simulation locally and understand how to collect data, train the NN, and scale up.
-
----
-
-## 6. Data & Model Strategy
-
-Nagorik Genesis will use a teacher-student learning loop.
-
-```text
-LLM reactions -> training samples -> neural network -> fast simulations -> more training data
-```
-
-| Data Asset | Purpose |
-|------------|---------|
-| LLM training samples | High-quality teacher examples for NN training |
-| Rule-based training samples | Local baseline data for smoke tests and verification |
-| Feature scaler | Ensures NN inference uses the same normalization as training |
-| Reaction model | Predicts citizen state deltas at scale |
-
-The first NN milestone will target **500+ LLM samples**. Later training passes will target larger and more diverse datasets across all policy domains.
-
----
-
-## 7. Testing Strategy
-
-| Gate | Required Result |
-|------|-----------------|
-| Syntax check | All Python files compile |
-| Unit tests | Core data, population, feature, stats, and ML behavior pass |
-| Simulation verification | All policy presets remain within valid state bounds |
-| ML training check | Model trains, saves, loads, and predicts valid deltas |
-| Dependency check | Streamlit, Plotly, Pandas, NumPy, Scikit-learn, Joblib, and dotenv import correctly |
-| UI smoke check | App starts and renders the main controls |
-
-Quality will be judged by:
-
-| Signal | Target |
-|--------|--------|
-| Bounds safety | Happiness, support, and income stay valid |
-| Policy coverage | All policy domains are represented |
-| Group coverage | Income, zone, division, religion, and remittance analysis works |
-| NN correctness | Model and scaler are always paired |
-| Runtime practicality | Large NN/rule-based runs remain responsive |
-| Explainability | Aggregate trends connect back to citizen and expert narratives |
-
----
-
-## 8. Launch Plan
-
-### Alpha
-
-The alpha will focus on local simulation and verification.
+### 1. Clone & Install
 
 ```bash
+git clone https://github.com/your-username/nagorik-genesis.git
+cd nagorik-genesis
+python -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
+```
+
+### 2. Set Up Ollama
+
+```bash
+ollama pull qwen2.5:7b
+ollama serve  # if not already running
+```
+
+### 3. Configure Environment
+
+```bash
 cp .env.example .env
+```
+
+Edit `.env` and add your API keys:
+
+```env
+# Optional — enhances web knowledge quality (free fallback available)
+TAVILY_API_KEY=your_tavily_api_key
+
+# Only needed if using Gemini backend instead of Ollama
+GEMINI_API_KEY=your_gemini_api_key
+```
+
+### 4. Launch
+
+```bash
 streamlit run app.py
 ```
 
-### Training Data Pass
-
-The first data pass will collect LLM samples across the policy presets.
-
-```bash
-python3 batch_simulate.py --pop 50 --steps 2 --presets 8
-```
-
-### NN Training Pass
-
-The first NN pass will train once enough LLM samples are available.
-
-```bash
-python3 train_nn.py
-```
-
-### Beta
-
-The beta will focus on scenario comparison, NN_ONLY scaling, and deployment readiness.
-
-| Requirement | Status Needed |
-|-------------|---------------|
-| Small LLM simulations | Required |
-| NN training from collected samples | Required |
-| NN_ONLY large simulation | Required |
-| Scenario comparison | Required |
-| Streamlit Cloud deployment | Required |
-| Clear responsible AI messaging | Required |
+The dashboard opens at `http://localhost:8501`.
 
 ---
 
-## 9. Future Direction
+## Configuration
 
-Nagorik Genesis will grow into a broader civic simulation platform.
-
-| Expansion | Future Capability |
-|-----------|-------------------|
-| Policy packs | Healthcare, labor, climate, education, taxation, infrastructure |
-| Data export | CSV and JSON exports for scenario analysis |
-| Scenario library | Saved policies, reusable populations, benchmark runs |
-| Model registry | Track model versions, datasets, validation metrics, and training date |
-| Expert review | Add human review and annotation workflows |
-| Localization framework | Support future country or regional variants |
-| Calibration layer | Tune synthetic distributions against trusted public datasets |
+| Parameter | Default | Description |
+|---|---|---|
+| `LLM_BACKEND` | `ollama` | LLM backend: `ollama` (local) or `gemini` (cloud) |
+| `OLLAMA_MODEL` | `qwen2.5:7b` | Ollama model to use |
+| `TAVILY_API_KEY` | — | Tavily API key for web knowledge (optional) |
+| Population Size | 1,000 | Configurable up to 50,000 via UI slider |
+| Simulation Steps | 5 | Number of time steps per simulation |
+| NN Hidden Layers | (128, 64, 32) | MLP architecture for citizen reaction model |
+| LLM Sample Size | 300 | Citizens processed by LLM per step in HYBRID mode |
 
 ---
 
-## Build Principle
+## Project Structure
 
-```text
-Bangladesh context -> synthetic citizens -> policy simulation -> LLM insight -> neural scale -> explainable dashboard
+```
+nagorik-genesis/
+├── app.py                  # Streamlit entry point
+├── simulation.py           # Core simulation engine (HYBRID/LLM/NN modes)
+├── llm_client.py           # LLM clients (Ollama, Gemini)
+├── population.py           # Synthetic population generator
+├── nn_model.py             # Neural network (MLPRegressor wrapper)
+├── ml_data.py              # Training data management
+├── web_knowledge.py        # Web search + LLM summarization pipeline
+├── data_models.py          # Core data structures (Citizen, Policy, etc.)
+├── config.py               # Centralized configuration
+├── utils.py                # Helpers, policy presets, feature engineering
+├── stats.py                # Statistical analysis utilities
+├── ui_sections.py          # Modular Streamlit UI components
+├── batch_simulate.py       # CLI batch simulation runner
+├── train_nn.py             # CLI neural network training
+├── verify_simulation.py    # Simulation verification tool
+├── test_nagorik.py         # Test suite
+├── requirements.txt        # Python dependencies
+├── .env.example            # Environment variable template
+├── data/                   # Training data (CSV)
+├── models/                 # Saved NN model + scalers (joblib)
+└── knowledge_cache/        # Cached web knowledge results
 ```
 
-Nagorik Genesis will make policy scenarios easier to explore before decisions move from proposal to public impact.
+---
+
+## CLI Tools
+
+```bash
+# Run batch simulations across multiple policies
+python batch_simulate.py
+
+# Train the neural network from collected LLM data
+python train_nn.py
+
+# Verify simulation pipeline end-to-end
+python verify_simulation.py
+
+# Run tests
+python test_nagorik.py
+```
+
+---
+
+## How It Works
+
+1. **Population Generation** — Creates synthetic citizens with 15+ attributes matching Bangladesh census distributions (division, income, religion, profession, education, political alignment, etc.)
+
+2. **Web Knowledge Enrichment** — Before simulation, queries Tavily/DuckDuckGo for real-world context about the policy, then uses the LLM to summarize findings into structured bullet points.
+
+3. **Simulation Loop** — For each time step:
+   - **HYBRID mode** selects stratified LLM anchors (balanced across demographics) and processes them through the LLM for nuanced, narrative-rich reactions.
+   - Remaining citizens are predicted by the calibrated neural network, bounded by LLM anchor ranges plus a tolerance margin.
+   - Citizens accumulate state changes (happiness, income, policy support) with diary entries.
+
+4. **Expert Analysis** — Four domain-specific AI experts analyze the aggregate results and provide policy recommendations.
+
+5. **Neural Network Learning** — Each LLM-processed citizen becomes training data. The MLP (40-dimensional input → 3 outputs) learns to approximate LLM behavior, improving with each simulation run.
+
+---
+
+## Tech Stack
+
+| Component | Technology |
+|---|---|
+| Frontend | Streamlit, Plotly |
+| LLM | Ollama (qwen2.5:7b) / Google Gemini |
+| ML Model | scikit-learn MLPRegressor |
+| Web Search | Tavily API, DuckDuckGo |
+| Data | pandas, NumPy |
+| Serialization | joblib |
+
+---
+
+## Documentation
+
+- [PROJECT_BLUEPRINT.md](PROJECT_BLUEPRINT.md) — Original design document
+- [DEPLOYMENT_ROADMAP.md](DEPLOYMENT_ROADMAP.md) — Production deployment plan and limitations assessment
+- [MODEL_SPECIFICATION.md](MODEL_SPECIFICATION.md) — Neural network architecture details
+- [PRESENTATION.md](PRESENTATION.md) — Project presentation and speech notes
+- [SIMULATION_ANALYSIS.md](SIMULATION_ANALYSIS.md) — Simulation quality analysis
+
+---
+
+## License
+
+This project is developed for research and educational purposes.
+
+---
+
+<p align="center">
+  Built for Bangladesh · Powered by Hybrid AI
+</p>
