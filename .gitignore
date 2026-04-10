@@ -46,3 +46,6 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Web knowledge cache
+knowledge_cache/

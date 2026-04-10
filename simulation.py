@@ -293,7 +293,8 @@ def run_simulation(
     llm_client: Any,
     existing_model: Optional[Any] = None,
     feature_scaler: Optional[Any] = None,
-    target_scaler: Optional[Any] = None
+    target_scaler: Optional[Any] = None,
+    knowledge_context: str = ""
 ) -> Dict[str, Any]:
     """
     Run a multi-step simulation of Bangladeshi citizen reactions to a policy.
@@ -308,6 +309,7 @@ def run_simulation(
         existing_model: Pre-trained CitizenReactionModel (optional).
         feature_scaler: Feature scaler for NN (optional).
         target_scaler: Target scaler for inverse-transforming NN predictions (optional).
+        knowledge_context: Web-sourced real-world knowledge about the policy (optional).
 
     Returns:
         Dict containing simulation results, states, stats, and training data.
@@ -394,7 +396,8 @@ def run_simulation(
                         "domain": config.policy.domain
                     }
                     reaction = llm_client.generate_citizen_reaction(
-                        citizen_profile, current_state, policy_dict
+                        citizen_profile, current_state, policy_dict,
+                        knowledge_context=knowledge_context
                     )
                     new_happiness = reaction["new_happiness"]
                     new_policy_support = reaction["new_policy_support"]
@@ -475,7 +478,8 @@ def run_simulation(
                         "domain": config.policy.domain
                     }
                     reaction = llm_client.generate_citizen_reaction(
-                        citizen_profile, current_state, policy_dict
+                        citizen_profile, current_state, policy_dict,
+                        knowledge_context=knowledge_context
                     )
                     new_happiness = reaction["new_happiness"]
                     new_policy_support = reaction["new_policy_support"]

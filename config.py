@@ -25,6 +25,9 @@ class Settings:
     backup_api_keys: Optional[List[str]] = None
     summary_api_key: Optional[str] = None
 
+    # Web Knowledge (Tavily API key — optional, DuckDuckGo used as free fallback)
+    tavily_api_key: str = ""
+
     # Default simulation parameters
     default_population_size: int = 1000
     default_steps: int = 5
@@ -72,6 +75,8 @@ def get_settings() -> Settings:
     backup_keys = [k.strip() for k in backup_keys_str.split(",") if k.strip()]
     summary_api_key = os.getenv("GEMINI_SUMMARY_API_KEY", "").strip() or None
 
+    tavily_api_key = os.getenv("TAVILY_API_KEY", "").strip()
+
     return Settings(
         llm_backend=llm_backend,
         ollama_model=ollama_model,
@@ -79,5 +84,6 @@ def get_settings() -> Settings:
         gemini_api_key=gemini_api_key,
         backup_api_keys=backup_keys if backup_keys else None,
         summary_api_key=summary_api_key,
+        tavily_api_key=tavily_api_key,
         random_seed=int(os.getenv("RANDOM_SEED", 0)) or None
     )

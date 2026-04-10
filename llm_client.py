@@ -162,7 +162,8 @@ class GeminiClient:
         self,
         citizen_profile: Dict[str, Any],
         current_state: Dict[str, Any],
-        policy: Dict[str, Any]
+        policy: Dict[str, Any],
+        knowledge_context: str = ""
     ) -> Dict[str, Any]:
         """
         Generate a Bangladeshi citizen's reaction to a policy using Gemini.
@@ -171,6 +172,7 @@ class GeminiClient:
             citizen_profile: Dict with citizen attributes (age, income_level, profession, division, religion, etc.).
             current_state: Dict with current happiness, policy_support, income.
             policy: Dict with title, description, domain.
+            knowledge_context: Optional web-sourced knowledge to ground the response.
 
         Returns:
             Dict with new_happiness, new_policy_support, income_delta, short_reason, diary_entry.
@@ -205,6 +207,18 @@ Output ONLY valid JSON with these exact keys:
 - diary_entry: string, 3-5 sentences in first-person perspective as a Bangladeshi citizen. May include Bengali words/phrases naturally.
 
 Do not include any explanation outside the JSON."""
+
+        if knowledge_context:
+            knowledge_block = (
+                "\n\nREAL-WORLD CONTEXT (from web search — use to ground your response):\n"
+                + knowledge_context
+                + "\n"
+            )
+            marker = "Output ONLY valid JSON"
+            if marker in system_prompt:
+                system_prompt = system_prompt.replace(marker, knowledge_block + "\n" + marker)
+            else:
+                system_prompt = system_prompt + knowledge_block
 
         user_prompt = f"""Citizen Profile:
 {json.dumps(citizen_profile, indent=2)}
@@ -430,11 +444,27 @@ class OllamaClient:
         self,
         citizen_profile: Dict[str, Any],
         current_state: Dict[str, Any],
-        policy: Dict[str, Any]
+        policy: Dict[str, Any],
+        knowledge_context: str = ""
     ) -> Dict[str, Any]:
         user_prompt = f"""Citizen Profile:\n{json.dumps(citizen_profile, indent=2)}\n\nCurrent State:\n{json.dumps(current_state, indent=2)}\n\nPolicy:\n{json.dumps(policy, indent=2)}\n\nGenerate the citizen's reaction as JSON."""
 
-        text = self._call(_CITIZEN_SYSTEM_PROMPT, user_prompt, force_json=True)
+        system = _CITIZEN_SYSTEM_PROMPT
+        if knowledge_context:
+            # Inject web knowledge before the JSON output instruction
+            knowledge_block = (
+                "\n\nREAL-WORLD CONTEXT (from web search — use to ground your response):\n"
+                + knowledge_context
+                + "\n"
+            )
+            # Insert before "Output ONLY valid JSON"
+            marker = "Output ONLY valid JSON"
+            if marker in system:
+                system = system.replace(marker, knowledge_block + "\n" + marker)
+            else:
+                system = system + knowledge_block
+
+        text = self._call(system, user_prompt, force_json=True)
         result = self._extract_json(text)
         if not result:
             raise RuntimeError(f"Ollama returned unparseable JSON: {text[:200]}")

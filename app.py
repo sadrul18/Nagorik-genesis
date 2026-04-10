@@ -22,6 +22,7 @@ from llm_client import create_llm_client
 from simulation import run_simulation
 from nn_model import train_reaction_model, load_reaction_model
 from ml_data import MLDataset
+from web_knowledge import create_web_knowledge_client
 from ui_sections import (
     render_sidebar_controls,
     render_learning_status_panel,
@@ -122,9 +123,9 @@ def initialize_session_state():
         st.session_state.summary_client = None
 
 
-def run_simulation_sync(config, citizens, llm_client, nn_model, feature_scaler, target_scaler=None):
+def run_simulation_sync(config, citizens, llm_client, nn_model, feature_scaler, target_scaler=None, knowledge_context=""):
     """Run simulation synchronously."""
-    return run_simulation(config, citizens, llm_client, nn_model, feature_scaler, target_scaler)
+    return run_simulation(config, citizens, llm_client, nn_model, feature_scaler, target_scaler, knowledge_context=knowledge_context)
 
 
 def main():
@@ -179,6 +180,17 @@ def main():
                 )
             else:
                 st.session_state.summary_client = st.session_state.llm_client
+
+        # Initialize Web Knowledge client
+        if "web_knowledge_client" not in st.session_state:
+            st.session_state.web_knowledge_client = create_web_knowledge_client(
+                tavily_api_key=settings.tavily_api_key,
+                ollama_model=settings.ollama_model,
+                ollama_host=settings.ollama_host,
+            )
+            if st.session_state.web_knowledge_client.is_available():
+                backend_name = "Tavily" if settings.tavily_api_key else "DuckDuckGo"
+                st.success(f"🌐 Web knowledge — {backend_name} search active")
 
     except Exception as e:
         st.error(f"❌ **Configuration Error**: {str(e)}")
@@ -264,6 +276,22 @@ def main():
                     )
                     st.session_state.current_population = population
 
+        # Search web for policy context (before simulation)
+        knowledge_context = ""
+        wk_client = st.session_state.get("web_knowledge_client")
+        if wk_client and wk_client.is_available() and config.mode != "NN_ONLY":
+            with st.spinner("🌐 ওয়েব থেকে নীতির প্রসঙ্গ অনুসন্ধান করা হচ্ছে..."):
+                try:
+                    knowledge_context = wk_client.search_policy_context(
+                        policy_title=config.policy.title,
+                        policy_description=config.policy.description,
+                        policy_domain=config.policy.domain,
+                    )
+                    if knowledge_context:
+                        st.info(f"🌐 Web knowledge loaded ({len(knowledge_context)} chars)")
+                except Exception as e:
+                    st.warning(f"⚠️ Web knowledge search failed (continuing without): {e}")
+
         with st.spinner(f"সিমুলেশন চলছে '{config.name}'..."):
             try:
                 results = run_simulation_sync(
@@ -272,7 +300,8 @@ def main():
                     st.session_state.llm_client,
                     st.session_state.nn_model,
                     st.session_state.feature_scaler,
-                    st.session_state.target_scaler
+                    st.session_state.target_scaler,
+                    knowledge_context=knowledge_context
                 )
 
                 st.session_state.scenarios[config.name] = results
