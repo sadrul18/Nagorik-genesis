@@ -1,0 +1,4 @@
+# This directory stores trained ML model files (.joblib).
+# Models are generated when the NN is trained on LLM samples.
+
+
